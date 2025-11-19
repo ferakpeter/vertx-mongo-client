@@ -679,6 +679,14 @@ public interface MongoClient {
   Future<MongoGridFsClient> createGridFsBucketService(String bucketName);
 
   /**
+   * Starts a session and returns a {@link MongoTransaction} which is a wrapper over the client
+   * that also allows manual control of the transaction.
+   *
+   * @return a future notified with a {@link MongoTransaction} used to control the transaction
+   */
+  Future<MongoTransaction> createTransaction();
+
+  /**
    * Close the client and release its resources
    */
   Future<Void> close();
