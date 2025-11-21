@@ -11,8 +11,6 @@ import java.util.Objects;
  * Options used to configure the client sessions and its transactions.
  *
  * <p>Added in MongoDB 4.2 https://www.mongodb.com/docs/manual/core/transactions/</p>
- *
- * @author <a href="mailto:szalaydan@gmail.com">Daniel Szalay</a>
  */
 @DataObject
 @JsonGen(publicConverter = false)
