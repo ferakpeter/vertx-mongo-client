@@ -6,8 +6,25 @@ import io.vertx.core.Future;
 @VertxGen
 public interface MongoSession extends MongoClient {
 
-  Future<MongoSession> startTransaction();
-  Future<Void> commitTransaction();
-  Future<Void> abortTransaction();
+  /**
+   * Starts a transaction on this session instance.
+   *
+   * @return a future notified with the current session
+   */
+  Future<MongoSession> start();
+
+  /**
+   * Commits the current transaction.
+   *
+   * @return a future notified once complete
+   */
+  Future<Void> commit();
+
+  /**
+   * Aborts the current transaction.
+   *
+   * @return a future notified once complete
+   */
+  Future<Void> abort();
 
 }

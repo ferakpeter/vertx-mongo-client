@@ -364,7 +364,7 @@ public class MongoSessionImpl implements MongoSession, Closeable {
   }
 
   @Override
-  public Future<MongoSession> startTransaction() {
+  public Future<MongoSession> start() {
     final Promise<MongoSession> promise = Promise.promise();
     try {
       session.startTransaction();
@@ -376,14 +376,14 @@ public class MongoSessionImpl implements MongoSession, Closeable {
   }
 
   @Override
-  public Future<Void> commitTransaction() {
+  public Future<Void> commit() {
     final Promise<Void> promise = Promise.promise();
     session.commitTransaction().subscribe(new ClientSessionSubscriber<>(promise, session, closeSession));
     return promise.future();
   }
 
   @Override
-  public Future<Void> abortTransaction() {
+  public Future<Void> abort() {
     final Promise<Void> promise = Promise.promise();
     session.abortTransaction().subscribe(new ClientSessionSubscriber<>(promise, session, closeSession));
     return promise.future();

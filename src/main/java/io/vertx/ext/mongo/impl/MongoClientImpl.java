@@ -941,12 +941,12 @@ public class MongoClientImpl implements io.vertx.ext.mongo.MongoClient, Closeabl
   public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, SessionOptions options) {
     return createSession(options)
       .compose(tx ->
-        tx.startTransaction()
+        tx.start()
           .compose(v ->
             work.apply(tx)
               .compose(
-                result -> tx.commitTransaction().map(result),
-                err -> tx.abortTransaction().compose(v2 -> Future.failedFuture(err))
+                result -> tx.commit().map(result),
+                err -> tx.abort().compose(v2 -> Future.failedFuture(err))
               )
           )
       );
