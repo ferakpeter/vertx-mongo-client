@@ -26,6 +26,7 @@ import com.mongodb.client.model.changestream.FullDocument;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
+import com.mongodb.connection.ClusterType;
 import com.mongodb.reactivestreams.client.*;
 import com.mongodb.reactivestreams.client.gridfs.GridFSBucket;
 import com.mongodb.reactivestreams.client.gridfs.GridFSBuckets;
@@ -40,6 +41,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.Shareable;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.ext.mongo.*;
 import io.vertx.ext.mongo.BulkWriteOptions;
 import io.vertx.ext.mongo.CountOptions;
 import io.vertx.ext.mongo.CreateCollectionOptions;
@@ -47,7 +49,6 @@ import io.vertx.ext.mongo.IndexModel;
 import io.vertx.ext.mongo.IndexOptions;
 import io.vertx.ext.mongo.RenameCollectionOptions;
 import io.vertx.ext.mongo.UpdateOptions;
-import io.vertx.ext.mongo.*;
 import io.vertx.ext.mongo.impl.codec.json.JsonObjectCodec;
 import io.vertx.ext.mongo.impl.config.MongoClientOptionsParser;
 import org.bson.BsonDocument;
@@ -904,6 +905,12 @@ public class MongoClientImpl implements io.vertx.ext.mongo.MongoClient, Closeabl
 
   @Override
   public Future<MongoTransaction> createTransaction() {
+    final ClusterType clusterType = mongo.getClusterDescription().getType();
+    if (clusterType == ClusterType.STANDALONE || clusterType == ClusterType.UNKNOWN) {
+      return Future.failedFuture(new IllegalStateException("Cluster type " + clusterType.name() +
+        " does not support distributed transactions."));
+    }
+
     final Promise<ClientSession> promise = Promise.promise();
     final MongoClientImpl mongoClient = (settings != null)
       ? new MongoClientImpl(vertx, config, dataSourceName, settings)
@@ -1039,8 +1046,8 @@ public class MongoClientImpl implements io.vertx.ext.mongo.MongoClient, Closeabl
       String key = entry.getKey();
       Object value = entry.getValue();
       if (key.equals(ID_FIELD)
-          && value instanceof String
-          && ObjectId.isValid((String) value)) {
+        && value instanceof String
+        && ObjectId.isValid((String) value)) {
         newJson.put(key, new JsonObject().put(JsonObjectCodec.OID_FIELD, value));
       } else if (value instanceof JsonObject) {
         newJson.put(key, deepEncodeKeyWhenUseObjectId((JsonObject) value));
@@ -1143,10 +1150,10 @@ public class MongoClientImpl implements io.vertx.ext.mongo.MongoClient, Closeabl
       .max(options.getMax())
       .storageEngine(toBson(options.getStorageEngine()))
       .partialFilterExpression(toBson(options.getPartialFilterExpression()));
-      if (co != null) {
-        o.collation(co.toMongoDriverObject());
-      }
-      return o;
+    if (co != null) {
+      o.collation(co.toMongoDriverObject());
+    }
+    return o;
   }
 
   @Nullable JsonObjectBsonAdapter wrap(@Nullable JsonObject jsonObject) {

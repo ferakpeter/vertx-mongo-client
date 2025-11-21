@@ -688,7 +688,7 @@ public interface MongoClient {
   Future<MongoTransaction> createTransaction();
 
   /**
-   * Starts a session and executes the passed work
+   * Starts a session and executes the passed work in a distributed transaction
    *
    * @param work     the operations to execute inside the transaction
    * @param <T>      the return type from the work function
