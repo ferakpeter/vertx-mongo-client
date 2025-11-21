@@ -27,11 +27,13 @@ public class ClientSessionSubscriber<T> implements Subscriber<T> {
 
   private final Promise<Void> promise;
   private final ClientSession session;
+  private final boolean closeSession;
 
-  public ClientSessionSubscriber(Promise<Void> promise, ClientSession session) {
+  public ClientSessionSubscriber(Promise<Void> promise, ClientSession session, boolean closeSession) {
     Objects.requireNonNull(promise, "promise is null");
     this.promise = promise;
     this.session = session;
+    this.closeSession = closeSession;
   }
 
   @Override
@@ -45,13 +47,13 @@ public class ClientSessionSubscriber<T> implements Subscriber<T> {
 
   @Override
   public void onError(Throwable t) {
-    session.close();
+    if (closeSession) session.close();
     promise.fail(t);
   }
 
   @Override
   public void onComplete() {
-    session.close();
+    if (closeSession) session.close();
     promise.complete();
   }
 }

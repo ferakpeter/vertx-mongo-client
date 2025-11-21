@@ -16,7 +16,6 @@
 
 package io.vertx.ext.mongo.impl;
 
-import com.mongodb.ClientSessionOptions;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.reactivestreams.client.ClientSession;
 import io.vertx.codegen.annotations.Nullable;
@@ -36,12 +35,14 @@ import java.util.function.Function;
 public class MongoSessionImpl implements MongoSession, Closeable {
   private final MongoClient delegate;
   private final ClientSession session;
+  private final boolean closeSession;
 
-  public MongoSessionImpl(MongoClient delegate, ClientSession session) {
+  public MongoSessionImpl(MongoClient delegate, ClientSession session, boolean closeSession) {
     Objects.requireNonNull(delegate);
     Objects.requireNonNull(session);
     this.delegate = delegate;
     this.session = session;
+    this.closeSession = closeSession;
   }
 
   @Override
@@ -335,7 +336,7 @@ public class MongoSessionImpl implements MongoSession, Closeable {
   }
 
   @Override
-  public Future<MongoSession> createSession(ClientSessionOptions options) {
+  public Future<MongoSession> createSession(SessionOptions options) {
     return delegate.createSession(options);
   }
 
@@ -345,7 +346,7 @@ public class MongoSessionImpl implements MongoSession, Closeable {
   }
 
   @Override
-  public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, ClientSessionOptions options) {
+  public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, SessionOptions options) {
     return delegate.inTransaction(work, options);
   }
 
@@ -377,14 +378,14 @@ public class MongoSessionImpl implements MongoSession, Closeable {
   @Override
   public Future<Void> commitTransaction() {
     final Promise<Void> promise = Promise.promise();
-    session.commitTransaction().subscribe(new ClientSessionSubscriber<>(promise, session));
+    session.commitTransaction().subscribe(new ClientSessionSubscriber<>(promise, session, closeSession));
     return promise.future();
   }
 
   @Override
   public Future<Void> abortTransaction() {
     final Promise<Void> promise = Promise.promise();
-    session.abortTransaction().subscribe(new ClientSessionSubscriber<>(promise, session));
+    session.abortTransaction().subscribe(new ClientSessionSubscriber<>(promise, session, closeSession));
     return promise.future();
   }
 

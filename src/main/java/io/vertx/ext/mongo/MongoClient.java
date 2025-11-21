@@ -1,6 +1,5 @@
 package io.vertx.ext.mongo;
 
-import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import io.vertx.codegen.annotations.GenIgnore;
@@ -690,15 +689,14 @@ public interface MongoClient {
 
   /**
    * Starts a session and returns a {@link MongoSession} which is a wrapper over the client
-   * that also allows manual control of the transaction. The specified {@link ClientSessionOptions}
+   * that also allows manual control of the transaction. The specified {@link SessionOptions}
    * will be applied to the session and all transactions.
    *
    * @param options    options to use for the session and transactions
    *
    * @return a future notified with a {@link MongoSession} used to control the transaction
    */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  Future<MongoSession> createSession(ClientSessionOptions options);
+  Future<MongoSession> createSession(SessionOptions options);
 
   /**
    * Starts a session and executes the passed work in a distributed transaction.
@@ -712,7 +710,7 @@ public interface MongoClient {
 
   /**
    * Starts a session and executes the passed work in a distributed transaction.
-   * The specified {@link ClientSessionOptions} will be applied to the session and all transactions.
+   * The specified {@link SessionOptions} will be applied to the session and all transactions.
    *
    * @param options    options to use for the session and transactions
    * @param work       the operations to execute inside the transaction
@@ -720,8 +718,7 @@ public interface MongoClient {
    *
    * @return a future notified with the result of work
    */
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, ClientSessionOptions options);
+  <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, SessionOptions options);
 
   /**
    * Close the client and release its resources
