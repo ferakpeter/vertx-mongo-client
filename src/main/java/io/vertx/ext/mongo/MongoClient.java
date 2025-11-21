@@ -14,6 +14,7 @@ import io.vertx.ext.mongo.impl.MongoClientImpl;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * A Vert.x service used to interact with MongoDB server instances.
@@ -677,6 +678,24 @@ public interface MongoClient {
    * @return a future notified with the {@link MongoGridFsClient} to interact with the bucket named bucketName
    */
   Future<MongoGridFsClient> createGridFsBucketService(String bucketName);
+
+  /**
+   * Starts a session and returns a {@link MongoTransaction} which is a wrapper over the client
+   * that also allows manual control of the transaction.
+   *
+   * @return a future notified with a {@link MongoTransaction} used to control the transaction
+   */
+  Future<MongoTransaction> createTransaction();
+
+  /**
+   * Starts a session and executes the passed work
+   *
+   * @param work     the operations to execute inside the transaction
+   * @param <T>      the return type from the work function
+   *
+   * @return a future notified with the result of work
+   */
+  <T> Future<@Nullable T> inTransaction(Function<MongoTransaction, Future<@Nullable T>> work);
 
   /**
    * Close the client and release its resources
