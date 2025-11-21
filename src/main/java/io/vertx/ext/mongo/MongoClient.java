@@ -690,15 +690,18 @@ public interface MongoClient {
 
   /**
    * Starts a session and returns a {@link MongoSession} which is a wrapper over the client
-   * that also allows manual control of the transaction.
+   * that also allows manual control of the transaction. The specified {@link ClientSessionOptions}
+   * will be applied to the session and all transactions.
    *
    * @param options    options to use for the session and transactions
+   *
    * @return a future notified with a {@link MongoSession} used to control the transaction
    */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   Future<MongoSession> createSession(ClientSessionOptions options);
 
   /**
-   * Starts a session and executes the passed work in a distributed transaction
+   * Starts a session and executes the passed work in a distributed transaction.
    *
    * @param work     the operations to execute inside the transaction
    * @param <T>      the return type from the work function
@@ -708,14 +711,16 @@ public interface MongoClient {
   <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work);
 
   /**
-   * Starts a session and executes the passed work in a distributed transaction
+   * Starts a session and executes the passed work in a distributed transaction.
+   * The specified {@link ClientSessionOptions} will be applied to the session and all transactions.
    *
    * @param options    options to use for the session and transactions
-   * @param work         the operations to execute inside the transaction
-   * @param <T>          the return type from the work function
+   * @param work       the operations to execute inside the transaction
+   * @param <T>        the return type from the work function
    *
    * @return a future notified with the result of work
    */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, ClientSessionOptions options);
 
   /**
