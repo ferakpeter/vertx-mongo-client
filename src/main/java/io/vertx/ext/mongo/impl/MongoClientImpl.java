@@ -16,6 +16,7 @@
 
 package io.vertx.ext.mongo.impl;
 
+import com.mongodb.ClientSessionOptions;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoNamespace;
 import com.mongodb.WriteConcern;
@@ -904,7 +905,7 @@ public class MongoClientImpl implements io.vertx.ext.mongo.MongoClient, Closeabl
   }
 
   @Override
-  public Future<MongoTransaction> createTransaction() {
+  public Future<MongoSession> createSession() {
     final ClusterType clusterType = mongo.getClusterDescription().getType();
     if (clusterType == ClusterType.STANDALONE || clusterType == ClusterType.UNKNOWN) {
       return Future.failedFuture(new IllegalStateException("Cluster type " + clusterType.name() +
@@ -919,20 +920,58 @@ public class MongoClientImpl implements io.vertx.ext.mongo.MongoClient, Closeabl
 
     return promise.future().map(newSession -> {
       mongoClient.session = newSession;
-      return new MongoTransactionImpl(mongoClient, newSession);
+      return new MongoSessionImpl(mongoClient, newSession);
     });
   }
 
   @Override
-  public <T> Future<@Nullable T> inTransaction(Function<MongoTransaction, Future<@Nullable T>> work) {
-    return createTransaction()
+  public Future<MongoSession> createSession(ClientSessionOptions options) {
+    final ClusterType clusterType = mongo.getClusterDescription().getType();
+    if (clusterType == ClusterType.STANDALONE || clusterType == ClusterType.UNKNOWN) {
+      return Future.failedFuture(new IllegalStateException("Cluster type " + clusterType.name() +
+        " does not support distributed transactions."));
+    }
+
+    final Promise<ClientSession> promise = Promise.promise();
+    final MongoClientImpl mongoClient = (settings != null)
+      ? new MongoClientImpl(vertx, config, dataSourceName, settings)
+      : new MongoClientImpl(vertx, config, dataSourceName);
+    final Publisher<ClientSession> publisher = (options != null)
+      ? mongoClient.mongo.startSession(options)
+      : mongoClient.mongo.startSession();
+    publisher.subscribe(new SingleResultSubscriber<>(promise));
+
+    return promise.future().map(newSession -> {
+      mongoClient.session = newSession;
+      return new MongoSessionImpl(mongoClient, newSession);
+    });
+  }
+
+  @Override
+  public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work) {
+    return createSession()
       .compose(tx ->
-        tx.start()
+        tx.startTransaction()
           .compose(v ->
             work.apply(tx)
               .compose(
-                result -> tx.commit().map(result),
-                err -> tx.abort().compose(v2 -> Future.failedFuture(err))
+                result -> tx.commitTransaction().map(result),
+                err -> tx.abortTransaction().compose(v2 -> Future.failedFuture(err))
+              )
+          )
+      );
+  }
+
+  @Override
+  public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, ClientSessionOptions options) {
+    return createSession(options)
+      .compose(tx ->
+        tx.startTransaction()
+          .compose(v ->
+            work.apply(tx)
+              .compose(
+                result -> tx.commitTransaction().map(result),
+                err -> tx.abortTransaction().compose(v2 -> Future.failedFuture(err))
               )
           )
       );

@@ -16,6 +16,7 @@
 
 package io.vertx.ext.mongo.impl;
 
+import com.mongodb.ClientSessionOptions;
 import com.mongodb.client.model.changestream.ChangeStreamDocument;
 import com.mongodb.reactivestreams.client.ClientSession;
 import io.vertx.codegen.annotations.Nullable;
@@ -32,11 +33,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class MongoTransactionImpl implements MongoTransaction, Closeable {
+public class MongoSessionImpl implements MongoSession, Closeable {
   private final MongoClient delegate;
   private final ClientSession session;
 
-  public MongoTransactionImpl(MongoClient delegate, ClientSession session) {
+  public MongoSessionImpl(MongoClient delegate, ClientSession session) {
     Objects.requireNonNull(delegate);
     Objects.requireNonNull(session);
     this.delegate = delegate;
@@ -329,13 +330,23 @@ public class MongoTransactionImpl implements MongoTransaction, Closeable {
   }
 
   @Override
-  public Future<MongoTransaction> createTransaction() {
-    return delegate.createTransaction();
+  public Future<MongoSession> createSession() {
+    return delegate.createSession();
   }
 
   @Override
-  public <T> Future<@Nullable T> inTransaction(Function<MongoTransaction, Future<@Nullable T>> work) {
+  public Future<MongoSession> createSession(ClientSessionOptions options) {
+    return delegate.createSession(options);
+  }
+
+  @Override
+  public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work) {
     return delegate.inTransaction(work);
+  }
+
+  @Override
+  public <T> Future<@Nullable T> inTransaction(Function<MongoSession, Future<@Nullable T>> work, ClientSessionOptions options) {
+    return delegate.inTransaction(work, options);
   }
 
   @Override
@@ -352,8 +363,8 @@ public class MongoTransactionImpl implements MongoTransaction, Closeable {
   }
 
   @Override
-  public Future<MongoTransaction> start() {
-    final Promise<MongoTransaction> promise = Promise.promise();
+  public Future<MongoSession> startTransaction() {
+    final Promise<MongoSession> promise = Promise.promise();
     try {
       session.startTransaction();
       promise.succeed(this);
@@ -364,14 +375,14 @@ public class MongoTransactionImpl implements MongoTransaction, Closeable {
   }
 
   @Override
-  public Future<Void> commit() {
+  public Future<Void> commitTransaction() {
     final Promise<Void> promise = Promise.promise();
     session.commitTransaction().subscribe(new ClientSessionSubscriber<>(promise, session));
     return promise.future();
   }
 
   @Override
-  public Future<Void> abort() {
+  public Future<Void> abortTransaction() {
     final Promise<Void> promise = Promise.promise();
     session.abortTransaction().subscribe(new ClientSessionSubscriber<>(promise, session));
     return promise.future();
